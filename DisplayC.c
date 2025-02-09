@@ -6,6 +6,7 @@
 #include "inc/font.h"
 #include "hardware/pio.h"
 #include "matriz_leds.h"
+#include <ctype.h>
 
 #define UART_ID uart0 // Seleciona a UART0
 #define BAUD_RATE 115200 // Define a taxa de transmissão
@@ -15,8 +16,8 @@
 #define I2C_SDA 14
 #define I2C_SCL 15
 #define endereco 0x3C
-#define button_a 6
-#define button_b 5
+#define button_a 5
+#define button_b 6
 #define led_pin_green 11
 #define led_pin_blue 12
 
@@ -129,13 +130,15 @@ int main()
 
     bool cor = true;
 
+            
+    ssd1306_fill(&ssd, !cor); // Limpa o display
+    ssd1306_rect(&ssd, 3, 3, 122, 58, cor, !cor); // Desenha um retângulo
+    ssd1306_send_data(&ssd); // Atualiza o display
+
+
     char command[20];
     while (true)
     {
-        
-        ssd1306_fill(&ssd, !cor); // Limpa o display
-        ssd1306_rect(&ssd, 3, 3, 122, 58, cor, !cor); // Desenha um retângulo
-        
         if (stdio_usb_connected())
         { // Certifica-se de que o USB está conectado
             char c;
@@ -144,9 +147,7 @@ int main()
                 handle_serial_command(c, pio, sm);
             }
         }
-        ssd1306_send_data(&ssd); // Atualiza o display
-
-        sleep_ms(1000);
+        sleep_ms(100);
     }
 }
 
@@ -190,11 +191,10 @@ void setup(){
     gpio_pull_up(I2C_SCL); // Pull up the clock line
     ssd1306_init(&ssd, WIDTH, HEIGHT, false, endereco, I2C_PORT); // Inicializa o display
     ssd1306_config(&ssd); // Configura o display
-    ssd1306_send_data(&ssd); // Envia os dados para o display
   
     // Limpa o display. O display inicia com todos os pixels apagados.
     ssd1306_fill(&ssd, false);
-    ssd1306_send_data(&ssd);
+    ssd1306_send_data(&ssd); // Envia os dados para o display
 }
 
 // Trata os comandos recebidos pela serial
@@ -205,6 +205,7 @@ void handle_serial_command(char c, PIO pio, uint sm) {
         case 'o': case 'p': case 'q': case 'r': case 's': case 't': case 'u':
         case 'v': case 'w': case 'x': case 'y': case 'z':
             ssd1306_draw_string(&ssd, (char[]){c, '\0'}, 64, 32);
+            ssd1306_send_data(&ssd); // Envia os dados para o display
             printf("Letra %c!\n", c);
             break;
 
@@ -239,6 +240,11 @@ static void gpio_irq_handler(uint gpio, uint32_t events) {
             // Exibe "Led Verde" no display se o LED verde estiver ligado
             if (gpio_get(led_pin_green)) {
                 ssd1306_draw_string(&ssd, "Led Verde", 30, 20);
+                ssd1306_send_data(&ssd); // Envia os dados para o display
+            } else{
+                ssd1306_fill(&ssd, !cor); // Limpa o display
+                ssd1306_rect(&ssd, 3, 3, 122, 58, cor, !cor); // Desenha um retângulo
+                ssd1306_send_data(&ssd); // Envia os dados para o display
             }
         }
         a++; // incrementa a variavel de verificação
@@ -257,10 +263,13 @@ static void gpio_irq_handler(uint gpio, uint32_t events) {
             // Exibe "Led Azul" no display se o LED azul estiver ligado
             if (gpio_get(led_pin_blue)) {
                 ssd1306_draw_string(&ssd, "Led Azul", 30, 20);
+                ssd1306_send_data(&ssd); // Envia os dados para o display
+            } else{
+                ssd1306_fill(&ssd, !cor); // Limpa o display
+                ssd1306_rect(&ssd, 3, 3, 122, 58, cor, !cor); // Desenha um retângulo
+                ssd1306_send_data(&ssd); // Envia os dados para o display
             }
         }
         a++; // incrementa a variavel de verificação
     }
-
-    ssd1306_send_data(&ssd); // Atualiza o display com as novas informações
 }
