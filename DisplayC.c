@@ -136,12 +136,6 @@ int main()
         ssd1306_fill(&ssd, !cor); // Limpa o display
         ssd1306_rect(&ssd, 3, 3, 122, 58, cor, !cor); // Desenha um retângulo
         
-        if (gpio_get(led_pin_green)){
-            ssd1306_draw_string(&ssd, "Led Verde", 30, 20);
-        } else if(gpio_get(led_pin_blue)){
-            ssd1306_draw_string(&ssd, "Led Azul", 30, 20);
-        }
-        
         if (stdio_usb_connected())
         { // Certifica-se de que o USB está conectado
             char c;
@@ -226,8 +220,7 @@ void handle_serial_command(char c, PIO pio, uint sm) {
     }
 }
 
-static void gpio_irq_handler(uint gpio, uint32_t events){
-
+static void gpio_irq_handler(uint gpio, uint32_t events) {
     bool cor = true;
     
     ssd1306_fill(&ssd, !cor); // Limpa o display
@@ -239,22 +232,35 @@ static void gpio_irq_handler(uint gpio, uint32_t events){
     if (current_time_a - last_time_a > 200000) // 200 ms de debouncing
     {
         last_time_a = current_time_a; // Atualiza o tempo do último evento
-        if(gpio_get(button_a)){
-        gpio_put(led_pin_green, !gpio_get(led_pin_green)); // Alterna o estado
-        printf("Led verde %s\n", gpio_get(led_pin_green) ? "ligado" : "desligado");
+        if (gpio == button_a) {
+            gpio_put(led_pin_green, !gpio_get(led_pin_green)); // Alterna o estado
+            printf("Led verde %s\n", gpio_get(led_pin_green) ? "ligado" : "desligado");
+            
+            // Exibe "Led Verde" no display se o LED verde estiver ligado
+            if (gpio_get(led_pin_green)) {
+                ssd1306_draw_string(&ssd, "Led Verde", 30, 20);
+            }
         }
         a++; // incrementa a variavel de verificação
     }
+
     // Obtém o tempo atual em microssegundos
     uint32_t current_time_b = to_us_since_boot(get_absolute_time());
     // Verifica se passou tempo suficiente desde o último evento
     if (current_time_b - last_time_b > 200000) // 200 ms de debouncing
     {
         last_time_b = current_time_b; // Atualiza o tempo do último evento
-        if(gpio_get(button_b)){
-        gpio_put(led_pin_blue, !gpio_get(led_pin_blue)); // Alterna o estado
-        printf("Led azul %s\n", gpio_get(led_pin_blue) ? "ligado" : "desligado");
+        if (gpio == button_b) {
+            gpio_put(led_pin_blue, !gpio_get(led_pin_blue)); // Alterna o estado
+            printf("Led azul %s\n", gpio_get(led_pin_blue) ? "ligado" : "desligado");
+            
+            // Exibe "Led Azul" no display se o LED azul estiver ligado
+            if (gpio_get(led_pin_blue)) {
+                ssd1306_draw_string(&ssd, "Led Azul", 30, 20);
+            }
         }
         a++; // incrementa a variavel de verificação
     }
+
+    ssd1306_send_data(&ssd); // Atualiza o display com as novas informações
 }
